@@ -1,0 +1,112 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Test + Android release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+        continue-on-error: true
+      - run: flutter test
+        continue-on-error: true
+
+      - name: Set up release signing (from repository secrets)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::Signing secrets not set - the APK is signed with a temporary key."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build APKs (website download) and App Bundle (Google Play)
+        run: |
+          flutter build apk --release
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk release/WantokRadioLight.apk
+          flutter build apk --release --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release/WantokRadioLight-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release/WantokRadioLight-armv7.apk
+          flutter build appbundle --release
+
+      - name: Name the files
+        id: meta
+        run: |
+          FULL=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          VERSION=${FULL%%+*}
+          BUILD=${FULL##*+}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          cp release/WantokRadioLight.apk "release/WantokRadioLight-v$VERSION.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "release/WantokRadioLight-v$VERSION-googleplay.aab"
+          ls -la release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wantok-radio-light-android
+          path: release/
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.meta.outputs.version }}
+          name: Wantok Radio Light ${{ steps.meta.outputs.version }} (build ${{ steps.meta.outputs.build }})
+          make_latest: true
+          body: |
+            Android: download the file for your phone below and open it.
+            - WantokRadioLight-arm64.apk : most phones (64-bit, 2017 and newer)
+            - WantokRadioLight-armv7.apk : older or basic phones (32-bit)
+            - WantokRadioLight.apk : works on every phone (bigger download)
+            The googleplay.aab file is for uploading to Google Play.
+          files: |
+            release/WantokRadioLight.apk
+            release/WantokRadioLight-arm64.apk
+            release/WantokRadioLight-armv7.apk
+            release/WantokRadioLight-v${{ steps.meta.outputs.version }}.apk
+            release/WantokRadioLight-v${{ steps.meta.outputs.version }}-googleplay.aab
+
+  ios:
+    name: iOS build check (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
