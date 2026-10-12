@@ -191,7 +191,7 @@ class PushService {
       final RemoteMessage? initial = await m.getInitialMessage();
       if (initial != null) _opened(initial);
       // A new registration (e.g. after restoring the phone) loses topics — rejoin.
-      m.onRegistered.listen((_) => _sync(force: true));
+      m.onTokenRefresh.listen((_) => _sync(force: true));
 
       final NotificationSettings ns = await m.getNotificationSettings();
       state.value = ReminderState(
