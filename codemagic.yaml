@@ -1,0 +1,67 @@
+# Codemagic CI/CD — build and publish without owning a Mac.
+# 1. Sign in at https://codemagic.io with GitHub and add this repository.
+# 2. Team settings → Integrations → App Store Connect: add an API key and name it
+#    "WRL App Store Connect" (or change the name below).
+# 3. Team settings → Code signing identities → Android keystores: upload your
+#    upload-keystore.jks with reference name "wrl_upload_key".
+# 4. Daily devotional push: in the Apple Developer portal → Identifiers →
+#    org.wantokradiolight.www, tick "Push Notifications" before the first iOS
+#    build (see docs/PUSH_NOTIFICATIONS.md).
+# 5. Start the "iOS App Store release" or "Android Play release" workflow.
+
+workflows:
+  ios-release:
+    name: iOS App Store release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: WRL App Store Connect
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: org.wantokradiolight.www
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Tests
+        script: flutter test
+      - name: Use signing profiles
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  android-release:
+    name: Android Play release
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      java: 17
+      android_signing:
+        - wrl_upload_key
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Tests
+        script: flutter test
+      - name: Write key.properties
+        script: |
+          cat > "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      - name: Build App Bundle
+        script: flutter build appbundle --release
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab

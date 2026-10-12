@@ -1,0 +1,62 @@
+name: wantok_radio_light
+description: "Wantok Radio Light - PNG Christian Broadcasting Network. Live radio streaming app for Android and iOS."
+publish_to: 'none'
+homepage: https://wantokradio.org
+repository: https://github.com/mmyolto/wantok-radio-flutter
+
+# version: <versionName>+<versionCode/buildNumber>
+# Increase the number after + for every upload to Google Play / App Store.
+version: 1.1.0+2
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.1"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Audio playback + lock-screen / notification controls + background audio
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  audio_session: ^0.2.4
+
+  # Platform services
+  connectivity_plus: ^7.0.0
+  url_launcher: ^6.3.1
+  share_plus: ^13.0.0
+  package_info_plus: ^10.0.0
+  path_provider: ^2.1.5
+  http: ^1.4.0
+
+  # Daily devotional push notifications (Firebase Cloud Messaging)
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
+  flutter_timezone: ^5.1.1 # phone's time zone, so devotionals arrive at local time
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700

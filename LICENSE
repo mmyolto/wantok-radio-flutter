@@ -1,0 +1,11 @@
+Copyright (c) 2026 Wantok Radio Light (PNG Christian Broadcasting Network).
+All rights reserved.
+
+This source code, the Wantok Radio Light name, logos, artwork and station content
+are the property of Wantok Radio Light. The code is published so the app can be
+built and verified openly; it may not be copied, redistributed or used to publish
+another app without written permission from Wantok Radio Light.
+
+Third-party packages used by this app keep their own licences (see pubspec.yaml).
+Fonts: Montserrat and Playfair Display, SIL Open Font License 1.1
+(assets/fonts/OFL-*.txt).
