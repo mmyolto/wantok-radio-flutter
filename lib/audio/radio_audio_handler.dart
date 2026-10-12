@@ -31,9 +31,10 @@ class RadioAudioHandler extends BaseAudioHandler {
 
   final NowPlayingService nowPlaying;
 
+  // No custom user agent: setting one makes just_audio route the stream through a
+  // local http:// proxy, which Android release builds block (no sound).
   final AudioPlayer _player = AudioPlayer(
     handleInterruptions: false, // handled below so a live stream rejoins live
-    userAgent: 'WantokRadioLight/1.0 (Flutter)',
   );
 
   /// Status for the UI (more detailed than [playbackState]).
