@@ -316,16 +316,19 @@ class DevotionalCard extends StatelessWidget {
       ],
     );
 
+    void open() => Navigator.of(context).push(DevotionalPage.route(devotional: d));
+
     return Semantics(
       button: true,
       label: '${d.slot.label}, ${devotionalDayLabel(d.date)}: ${d.title}',
+      onTap: open,
       excludeSemantics: true,
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Ink(
           decoration: featured ? const BoxDecoration(gradient: AppColors.headerGradient) : null,
           child: InkWell(
-            onTap: () => Navigator.of(context).push(DevotionalPage.route(devotional: d)),
+            onTap: open,
             child: Padding(padding: const EdgeInsets.all(20), child: content),
           ),
         ),

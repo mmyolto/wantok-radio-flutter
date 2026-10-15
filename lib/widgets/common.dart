@@ -83,6 +83,15 @@ class ScreenTitle extends StatelessWidget {
               style: t.headlineMedium?.copyWith(color: AppColors.primary),
             ),
           ),
+          const SizedBox(height: 10),
+          Container(
+            width: 46,
+            height: 4,
+            decoration: BoxDecoration(
+              gradient: AppColors.goldGradient,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
           if (subtitle != null) ...<Widget>[
             const SizedBox(height: 8),
             Text(
@@ -114,12 +123,24 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(padding: padding, child: child),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Card(
+        color: color,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
+        ),
       ),
     );
   }
@@ -191,6 +212,14 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
       foregroundColor: Colors.white,
       flexibleSpace: const DecoratedBox(
         decoration: BoxDecoration(gradient: AppColors.headerGradient),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            height: 1.5,
+            width: double.infinity,
+            child: DecoratedBox(decoration: BoxDecoration(gradient: AppColors.goldLine)),
+          ),
+        ),
       ),
       title: FittedBox(
         fit: BoxFit.scaleDown,
@@ -199,8 +228,8 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
           style: const TextStyle(
             fontFamily: AppTheme.displayFont,
             fontWeight: FontWeight.w700,
-            fontSize: 20,
-            letterSpacing: 1,
+            fontSize: 19,
+            letterSpacing: 2.2,
             color: Colors.white,
           ),
         ),
@@ -237,6 +266,111 @@ class DeveloperCredit extends StatelessWidget {
           fontSize: size,
           letterSpacing: 0.3,
           color: color.withValues(alpha: 0.85),
+        ),
+      ),
+    );
+  }
+}
+
+/// Frosted-glass panel used on the dark "on air" screens.
+class GlassPanel extends StatelessWidget {
+  const GlassPanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = 20,
+    this.onTap,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final BorderRadius r = BorderRadius.circular(radius);
+    return Material(
+      color: Colors.white.withValues(alpha: 0.07),
+      shape: RoundedRectangleBorder(
+        borderRadius: r,
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: r,
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+  }
+}
+
+/// Big gold call-to-action button with a soft glow.
+class GoldButton extends StatelessWidget {
+  const GoldButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.height = 56,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AppColors.goldGradient,
+          borderRadius: BorderRadius.circular(height / 2),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: AppColors.gold.withValues(alpha: 0.45),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(height / 2),
+            onTap: onPressed,
+            child: SizedBox(
+              height: height,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  if (icon != null) ...<Widget>[
+                    Icon(icon, color: AppColors.night, size: 22),
+                    const SizedBox(width: 10),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: AppTheme.bodyFont,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                        color: AppColors.night,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

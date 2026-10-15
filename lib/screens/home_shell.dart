@@ -11,6 +11,7 @@ import '../audio/radio_audio_handler.dart';
 import '../config/app_config.dart';
 import '../services/push_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/launcher.dart';
 import '../widgets/common.dart';
 import '../widgets/mini_player.dart';
 import 'about_screen.dart';
@@ -362,10 +363,18 @@ class _AppDrawer extends StatelessWidget {
       selectedIndex: selected,
       onDestinationSelected: onSelect,
       backgroundColor: Colors.white,
-      indicatorColor: AppColors.primaryContainer,
       children: <Widget>[
         const _DrawerHeader(),
-        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: GoldButton(
+            label: 'Give Online',
+            icon: Icons.favorite_rounded,
+            height: 48,
+            onPressed: () => Launch.web(context, AppConfig.donateUrl),
+          ),
+        ),
+        const SizedBox(height: 4),
         for (final _Section s in _sections)
           NavigationDrawerDestination(
             icon: Icon(s.icon),
@@ -392,14 +401,23 @@ class _DrawerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      decoration: const BoxDecoration(
+        gradient: AppColors.headerGradient,
+        borderRadius: BorderRadius.only(bottomRight: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
       child: Column(
         children: <Widget>[
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-            child: const StationLogo(height: 64),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: <BoxShadow>[
+                BoxShadow(color: AppColors.gold.withValues(alpha: 0.35), blurRadius: 24),
+              ],
+            ),
+            child: const StationLogo(height: 60),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -420,9 +438,9 @@ class _DrawerHeader extends StatelessWidget {
             style: TextStyle(
               fontFamily: AppTheme.bodyFont,
               fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: 11.5,
               color: AppColors.gold,
-              letterSpacing: 1.5,
+              letterSpacing: 2.4,
             ),
           ),
         ],

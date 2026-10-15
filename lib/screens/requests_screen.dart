@@ -256,7 +256,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
       context: context,
       builder: (_) => CountryPickerDialog(selected: _country),
     );
-    if (picked != null) setState(() => _country = picked);
+    if (picked != null && mounted) setState(() => _country = picked);
   }
 
   void _revalidate(String _) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'config/app_config.dart';
 import 'screens/home_shell.dart';
@@ -10,19 +11,32 @@ final GlobalKey<ScaffoldMessengerState> rootMessengerKey = GlobalKey<ScaffoldMes
 class WantokRadioApp extends StatelessWidget {
   const WantokRadioApp({super.key});
 
+  static final ThemeData _theme = AppTheme.light();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      // ONE fixed brand theme: the phone's light / dark mode never changes it.
+      theme: _theme,
+      darkTheme: _theme,
+      highContrastTheme: _theme,
+      highContrastDarkTheme: _theme,
       themeMode: ThemeMode.light,
       scaffoldMessengerKey: rootMessengerKey,
       // Respect the user's font size, but keep layouts readable at extremes.
-      builder: (BuildContext context, Widget? child) => MediaQuery.withClampedTextScaling(
-        minScaleFactor: 0.85,
-        maxScaleFactor: 1.6,
-        child: child ?? const SizedBox.shrink(),
+      builder: (BuildContext context, Widget? child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: AppTheme.overlay,
+        child: MediaQuery(
+          // Always render as "light" so no widget reacts to the phone's dark mode.
+          data: MediaQuery.of(context).copyWith(platformBrightness: Brightness.light),
+          child: MediaQuery.withClampedTextScaling(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.6,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
       ),
       home: const _Root(),
     );

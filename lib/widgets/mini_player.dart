@@ -62,70 +62,125 @@ class _Bar extends StatelessWidget {
         status == RadioStatus.offline;
     final bool showPlay = status == RadioStatus.paused || status == RadioStatus.error;
 
-    return Material(
-      color: AppColors.primary,
-      child: SafeArea(
-        top: false,
-        child: InkWell(
-          onTap: onOpen,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-            child: Row(
-              children: <Widget>[
-                ClipOval(
-                  child: Image.asset(
-                    'assets/images/station_artwork.png',
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                    excludeFromSemantics: true,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[AppColors.primary, AppColors.night],
+        ),
+        border: Border(top: BorderSide(color: Color(0x99FFD60A), width: 1.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          top: false,
+          child: InkWell(
+            onTap: onOpen,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppColors.goldGradient,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/station_artwork.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        excludeFromSemantics: true,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ValueListenableBuilder<NowPlaying?>(
-                    valueListenable: nowPlayingService.current,
-                    builder: (BuildContext context, NowPlaying? np, _) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'Wantok Radio Light',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ValueListenableBuilder<NowPlaying?>(
+                      valueListenable: nowPlayingService.current,
+                      builder: (BuildContext context, NowPlaying? np, _) => Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              if (status == RadioStatus.playing) ...<Widget>[
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.red,
+                                    boxShadow: <BoxShadow>[
+                                      BoxShadow(color: AppColors.red, blurRadius: 6),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              const Flexible(
+                                child: Text(
+                                  'Wantok Radio Light',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Text(
-                          _subtitle(np),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: AppColors.gold, fontSize: 12.5),
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          Text(
+                            _subtitle(np),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppColors.gold, fontSize: 12.5),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                if (busy)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  if (busy)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.gold),
+                      ),
+                    ),
+                  Semantics(
+                    button: true,
+                    label: showPlay ? 'Play' : 'Stop',
+                    onTap: showPlay ? radio.play : radio.stop,
+                    excludeSemantics: true,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: showPlay ? radio.play : radio.stop,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppColors.goldGradient,
+                        ),
+                        child: Icon(
+                          showPlay ? Icons.play_arrow_rounded : Icons.stop_rounded,
+                          color: AppColors.night,
+                          size: 28,
+                        ),
+                      ),
                     ),
                   ),
-                IconButton(
-                  color: Colors.white,
-                  iconSize: 32,
-                  tooltip: showPlay ? 'Play' : 'Stop',
-                  icon: Icon(showPlay ? Icons.play_circle_fill : Icons.stop_circle),
-                  onPressed: showPlay ? radio.play : radio.stop,
-                ),
-              ],
+                  const SizedBox(width: 4),
+                ],
+              ),
             ),
           ),
         ),

@@ -45,61 +45,81 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final Size size = MediaQuery.sizeOf(context);
     final double logoWidth = (size.width * 0.8).clamp(200.0, 480.0);
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: Center(
-                // Scales down on short screens (phone landscape, large text).
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: FadeTransition(
-                    opacity: _fade,
-                    child: ScaleTransition(
-                      scale: _scale,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Image.asset(
-                              'assets/images/logo.png',
-                              width: logoWidth,
-                              fit: BoxFit.contain,
-                              semanticLabel: 'Wantok Radio Light logo',
-                            ),
-                            const SizedBox(height: 32),
-                            const Text(
-                              'YOUR INSPIRATION STATION',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: AppTheme.bodyFont,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
-                                color: AppColors.primary,
+      backgroundColor: AppColors.night,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: Center(
+                  // Scales down on short screens (phone landscape, large text).
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: FadeTransition(
+                      opacity: _fade,
+                      child: ScaleTransition(
+                        scale: _scale,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: <BoxShadow>[
+                                    BoxShadow(
+                                      color: AppColors.gold.withValues(alpha: 0.45),
+                                      blurRadius: 40,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  width: logoWidth,
+                                  fit: BoxFit.contain,
+                                  semanticLabel: 'Wantok Radio Light logo',
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 40),
-                            const SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                color: AppColors.secondary,
+                              const SizedBox(height: 32),
+                              const Text(
+                                'YOUR INSPIRATION STATION',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: AppTheme.bodyFont,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 3,
+                                  color: AppColors.gold,
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 40),
+                              const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  color: AppColors.gold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const Padding(padding: EdgeInsets.only(bottom: 16), child: DeveloperCredit()),
-          ],
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: DeveloperCredit(color: Colors.white70),
+              ),
+            ],
+          ),
         ),
       ),
     );

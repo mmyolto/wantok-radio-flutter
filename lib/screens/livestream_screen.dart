@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
@@ -124,7 +122,7 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Theme.of(context).colorScheme.surface,
+      color: AppColors.background,
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints c) {
           final bool landscape = c.maxWidth > c.maxHeight && c.maxWidth >= 560;
@@ -132,47 +130,89 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
 
           if (landscape) {
             final double art = (c.maxHeight * 0.62).clamp(140.0, 360.0);
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(pad),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: c.maxHeight - pad * 2),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1000),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Center(
-                            child: _Artwork(size: art, spin: _spin),
-                          ),
-                        ),
-                        SizedBox(width: pad),
-                        Expanded(child: _controls(c.maxWidth / 2)),
-                      ],
+            return Row(
+              children: <Widget>[
+                // Green panel with the disc on the left.
+                Expanded(
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      gradient: AppColors.headerGradient,
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(36),
+                        bottomRight: Radius.circular(36),
+                      ),
+                    ),
+                    child: Center(child: _Artwork(size: art, spin: _spin)),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(pad),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: c.maxHeight - pad * 2),
+                      child: Center(child: _controls()),
                     ),
                   ),
                 ),
-              ),
+              ],
             );
           }
 
-          final double art = (c.maxHeight * 0.4).clamp(150.0, 320.0).clamp(0.0, c.maxWidth * 0.78);
+          // Portrait: green top, disc floating over the light bottom.
+          final double art = (c.maxHeight * 0.36).clamp(150.0, 300.0).clamp(0.0, c.maxWidth * 0.72);
+          const double topGap = 20;
+          final double band = topGap + art * 0.62;
           return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(pad, pad + 8, pad, pad),
+            padding: EdgeInsets.only(bottom: pad),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: c.maxHeight - pad * 2 - 8),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      _Artwork(size: art, spin: _spin),
-                      const SizedBox(height: 28),
-                      _controls(c.maxWidth),
-                    ],
+              constraints: BoxConstraints(minHeight: c.maxHeight - pad),
+              child: Column(
+                children: <Widget>[
+                  SizedBox(
+                    height: topGap + art,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: <Widget>[
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: band,
+                          child: const DecoratedBox(
+                            decoration: BoxDecoration(gradient: AppColors.headerGradient),
+                          ),
+                        ),
+                        Positioned(
+                          top: band - 36,
+                          left: 0,
+                          right: 0,
+                          height: 37,
+                          child: const DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: topGap,
+                          left: 0,
+                          right: 0,
+                          child: Center(child: _Artwork(size: art, spin: _spin)),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(pad, 20, pad, 0),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: _controls(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -181,10 +221,7 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
     );
   }
 
-  Widget _controls(double availableWidth) {
-    final TextTheme t = Theme.of(context).textTheme;
-    final double buttonWidth = (availableWidth * 0.6).clamp(200.0, 300.0);
-
+  Widget _controls() {
     return ValueListenableBuilder<RadioStatus>(
       valueListenable: radio.status,
       builder: (BuildContext context, RadioStatus status, _) {
@@ -200,73 +237,22 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                AppConfig.appName,
-                textAlign: TextAlign.center,
-                style: t.headlineMedium?.copyWith(color: AppColors.primary),
-              ),
-            ),
-            const SizedBox(height: 6),
             _StatusLine(status: status),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             const _NowPlayingCard(),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: buttonWidth,
-              height: 64,
-              child: FilledButton(
-                onPressed: _onPlayPressed,
-                style: FilledButton.styleFrom(
-                  backgroundColor: idle ? AppColors.primary : AppColors.red,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                  elevation: 3,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    if (busy)
-                      const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
-                      )
-                    else
-                      Icon(idle ? Icons.play_arrow_rounded : Icons.stop_rounded, size: 40),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        idle ? 'Play' : (busy ? 'Cancel' : 'Stop'),
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 22),
+            _PlayPill(idle: idle, busy: busy, onPressed: _onPlayPressed),
+            const SizedBox(height: 8),
             ValueListenableBuilder<DateTime?>(
               valueListenable: radio.sleepAt,
               builder: (BuildContext context, DateTime? at, _) => TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: AppColors.onSurfaceVariant),
                 onPressed: _openSleepTimer,
                 icon: Icon(at == null ? Icons.bedtime_outlined : Icons.bedtime),
                 label: Text(at == null ? 'Sleep timer' : 'Sleep timer · stops ${_clock(at)}'),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'REACHING YOU RIGHT WHERE YOU ARE',
-              textAlign: TextAlign.center,
-              style: t.labelLarge?.copyWith(
-                color: AppColors.secondary,
-                letterSpacing: 1.6,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 22),
             _OnDemandCard(onTap: () => Launch.web(context, AppConfig.onDemandUrl)),
           ],
         );
@@ -333,40 +319,64 @@ class _Artwork extends StatelessWidget {
   }
 }
 
-class _LiveBadge extends StatelessWidget {
-  const _LiveBadge();
+/// Wide green Play / Stop button.
+class _PlayPill extends StatelessWidget {
+  const _PlayPill({required this.idle, required this.busy, required this.onPressed});
+
+  final bool idle;
+  final bool busy;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<RadioStatus>(
-      valueListenable: radio.status,
-      builder: (BuildContext context, RadioStatus status, _) {
-        if (status != RadioStatus.playing) return const SizedBox.shrink();
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.red,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white, width: 1.5),
+    return SizedBox(
+      width: 230,
+      height: 60,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: const StadiumBorder(),
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.circle, size: 8, color: Colors.white),
-              SizedBox(width: 5),
-              Text(
-                'LIVE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 1,
+              if (busy)
+                const SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.gold),
+                )
+              else
+                Icon(
+                  idle ? Icons.play_arrow_rounded : Icons.stop_rounded,
+                  size: 34,
+                  color: AppColors.gold,
+                ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  idle ? 'Play' : (busy ? 'Cancel' : 'Stop'),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -377,8 +387,9 @@ class _StatusLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String text;
-    Color color = AppColors.secondary;
+    final String text;
+    Color dot = AppColors.goldDeep;
+    Color color = AppColors.primary;
     switch (status) {
       case RadioStatus.stopped:
         text = AppConfig.tagline;
@@ -388,24 +399,43 @@ class _StatusLine extends StatelessWidget {
         text = 'Reconnecting…';
       case RadioStatus.offline:
         text = 'Waiting for internet connection…';
+        dot = AppColors.error;
         color = AppColors.error;
       case RadioStatus.playing:
         text = 'On Air · Live Now';
-        color = AppColors.primaryLight;
+        dot = const Color(0xFF22C55E);
       case RadioStatus.paused:
         text = 'Paused — tap Play to rejoin live';
       case RadioStatus.error:
         text = 'Stream unavailable — please try again';
+        dot = AppColors.error;
         color = AppColors.error;
     }
     return Semantics(
       liveRegion: true,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyLarge?.copyWith(color: color, fontWeight: FontWeight.w600),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dot,
+              boxShadow: <BoxShadow>[BoxShadow(color: dot.withValues(alpha: 0.6), blurRadius: 8)],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: color, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -423,17 +453,17 @@ class _NowPlayingCard extends StatelessWidget {
         final String label = np.isLive && (np.streamerName ?? '').isNotEmpty
             ? 'LIVE WITH ${np.streamerName!.toUpperCase()}'
             : 'NOW PLAYING';
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.secondaryContainer.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(14),
-          ),
+        return SectionCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: <Widget>[
-              const Icon(Icons.music_note_rounded, color: AppColors.secondary),
-              const SizedBox(width: 10),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary),
+                child: const Icon(Icons.music_note_rounded, color: AppColors.gold, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +474,7 @@ class _NowPlayingCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.3,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -454,7 +484,7 @@ class _NowPlayingCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSecondaryContainer,
+                        color: AppColors.onBackground,
                       ),
                     ),
                   ],
@@ -474,39 +504,74 @@ class _OnDemandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.headphones_rounded, color: AppColors.primary),
+    return SectionCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.headphones_rounded, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Listen or Download On-Demand',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Listen or Download On-Demand',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const Icon(Icons.open_in_new_rounded, color: AppColors.primary, size: 20),
+            ),
+          ),
+          const Icon(Icons.open_in_new_rounded, color: AppColors.primary, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<RadioStatus>(
+      valueListenable: radio.status,
+      builder: (BuildContext context, RadioStatus status, _) {
+        if (status != RadioStatus.playing) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.red,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white, width: 1.5),
+            boxShadow: <BoxShadow>[
+              BoxShadow(color: AppColors.red.withValues(alpha: 0.6), blurRadius: 12),
             ],
           ),
-        ),
-      ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.circle, size: 8, color: Colors.white),
+              SizedBox(width: 5),
+              Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -134,6 +134,7 @@ class _ContactTile extends StatelessWidget {
     return Semantics(
       button: true,
       label: '$title. $subtitle',
+      onTap: onTap,
       excludeSemantics: true,
       child: SectionCard(
         onTap: onTap,

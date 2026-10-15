@@ -14,13 +14,7 @@ Future<void> main() async {
 
   // Draw behind the status / navigation bars (required look on Android 15+).
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarContrastEnforced: false,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(AppTheme.overlay);
 
   try {
     radio = await AudioService.init<RadioAudioHandler>(

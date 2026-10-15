@@ -61,6 +61,13 @@ class AppConfig {
   // ---------------------------------------------------------------------------
   static const String websiteUrl = 'https://wantokradio.org/';
   static const String onDemandUrl = 'https://wantokradio.org/#/ondemand';
+
+  /// Online giving: the app opens the website's secure donation page, so every
+  /// gift goes through the same page, policies and records as the website.
+  static const String donateUrl = 'https://wantokradio.org/#/support';
+  static const String donationTermsUrl = 'https://wantokradio.org/policies.html#terms';
+  static const String donationPrivacyUrl = 'https://wantokradio.org/policies.html#privacy';
+  static const String donationRefundUrl = 'https://wantokradio.org/policies.html#refunds';
   static const String facebookUrl = 'https://www.facebook.com/ChristianNet';
 
   /// Upload store_assets/privacy.html to the website so this link works —

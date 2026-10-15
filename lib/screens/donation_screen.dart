@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../config/app_config.dart';
 import '../data/station_content.dart';
 import '../theme/app_theme.dart';
+import '../utils/launcher.dart';
 import '../widgets/common.dart';
 
 class DonationScreen extends StatelessWidget {
@@ -63,10 +64,8 @@ class DonationScreen extends StatelessWidget {
                 ],
               ),
             ),
-            if (AppConfig.showOnlineDonation) ...<Widget>[
-              const SizedBox(height: 16),
-              const _OnlineDonationCard(),
-            ],
+            const SizedBox(height: 16),
+            const _OnlineDonationCard(),
             const SizedBox(height: 24),
             Text(
               'Bank Transfer',
@@ -162,22 +161,25 @@ class _CopyRow extends StatelessWidget {
   final String label;
   final String value;
 
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text('$label copied')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextTheme t = Theme.of(context).textTheme;
     return Semantics(
       button: true,
       label: '$label $value. Double tap to copy.',
+      onTap: () => _copy(context),
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: () async {
-          await Clipboard.setData(ClipboardData(text: value));
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text('$label copied')));
-        },
+        onTap: () => _copy(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
           child: Row(
@@ -213,32 +215,84 @@ class _OnlineDonationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme t = Theme.of(context).textTheme;
-    return SectionCard(
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.35)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const CardTitle('Online Donation', icon: Icons.credit_card),
           Row(
             children: <Widget>[
-              Image.asset(
-                'assets/images/paypal.png',
-                width: 48,
-                height: 48,
-                semanticLabel: 'PayPal',
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: AppColors.goldGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.volunteer_activism_rounded, color: AppColors.night),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Text('Debit / Credit Card or PayPal', style: t.bodyLarge)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Give Online', style: t.titleLarge?.copyWith(color: Colors.white)),
+                    Text(
+                      'One-time or monthly gift in Kina',
+                      style: t.bodyMedium?.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Tap below to open our secure donation page on wantokradio.org. '
+            'Choose your amount and follow the steps there.',
+            style: t.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.85), height: 1.5),
+          ),
+          const SizedBox(height: 18),
+          GoldButton(
+            label: 'Donate Now',
+            icon: Icons.favorite_rounded,
+            onPressed: () => Launch.web(context, AppConfig.donateUrl),
+          ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () =>
-                  showDialog<void>(context: context, builder: (_) => const _DonationDialog()),
-              icon: const Icon(Icons.volunteer_activism),
-              label: const Text('Donate by credit/debit card'),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const Icon(Icons.lock_rounded, size: 14, color: AppColors.gold),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Secure page · opens in your browser',
+                  style: t.bodySmall?.copyWith(color: Colors.white70),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 4,
+            children: <Widget>[
+              _PolicyLink(label: 'Terms & Conditions', url: AppConfig.donationTermsUrl),
+              _PolicyLink(label: 'Privacy Policy', url: AppConfig.donationPrivacyUrl),
+              _PolicyLink(label: 'Refund Policy', url: AppConfig.donationRefundUrl),
+            ],
           ),
         ],
       ),
@@ -246,58 +300,28 @@ class _OnlineDonationCard extends StatelessWidget {
   }
 }
 
-class _DonationDialog extends StatefulWidget {
-  const _DonationDialog();
-
-  @override
-  State<_DonationDialog> createState() => _DonationDialogState();
-}
-
-class _DonationDialogState extends State<_DonationDialog> {
-  int? _amount;
+class _PolicyLink extends StatelessWidget {
+  const _PolicyLink({required this.label, required this.url});
+  final String label;
+  final String url;
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Select Donation Amount (PGK)'),
-      content: SingleChildScrollView(
-        child: Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: <Widget>[
-            for (final int a in donationAmounts)
-              ChoiceChip(
-                label: Text('K$a'),
-                selected: _amount == a,
-                onSelected: (_) => setState(() => _amount = a),
-              ),
-          ],
+    return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.gold,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 36),
+        textStyle: const TextStyle(
+          fontFamily: AppTheme.bodyFont,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          decoration: TextDecoration.underline,
+          decorationColor: AppColors.gold,
         ),
       ),
-      actions: <Widget>[
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        FilledButton(
-          onPressed: _amount == null
-              ? null
-              : () {
-                  final NavigatorState nav = Navigator.of(context);
-                  nav.pop();
-                  showDialog<void>(
-                    context: nav.context,
-                    builder: (BuildContext ctx) => AlertDialog(
-                      title: const Text('Coming Soon'),
-                      content: const Text(
-                        'Online payment integration is currently under development. Please use Bank Transfer for now. Thank you!',
-                      ),
-                      actions: <Widget>[
-                        FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-                      ],
-                    ),
-                  );
-                },
-          child: const Text('Donate Now'),
-        ),
-      ],
+      onPressed: () => Launch.web(context, url),
+      child: Text(label),
     );
   }
 }
