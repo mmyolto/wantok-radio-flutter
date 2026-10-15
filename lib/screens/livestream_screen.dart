@@ -153,22 +153,17 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
     if (_dialogContext != null) return; // one pop-up at a time
     final String? choice = await showDialog<String>(
       context: context,
+      barrierColor: _StreamAlert.scrim,
       builder: (BuildContext ctx) {
         _dialogContext = ctx;
-        return AlertDialog(
-          icon: Icon(icon, color: AppColors.error, size: 36),
-          title: Text(title),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, 'stop'),
-              child: Text(keepTrying ? 'Stop' : 'Close'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, keepTrying ? 'wait' : 'retry'),
-              child: Text(keepTrying ? 'Keep trying' : 'Try again'),
-            ),
-          ],
+        return _StreamAlert(
+          icon: icon,
+          title: title,
+          message: message,
+          primaryLabel: keepTrying ? 'Keep trying' : 'Try again',
+          secondaryLabel: keepTrying ? 'Stop' : 'Close',
+          onPrimary: () => Navigator.pop(ctx, keepTrying ? 'wait' : 'retry'),
+          onSecondary: () => Navigator.pop(ctx, 'stop'),
         );
       },
     );
@@ -212,15 +207,13 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
     if (offline) {
       await showDialog<void>(
         context: context,
-        builder: (BuildContext ctx) => AlertDialog(
-          icon: const Icon(Icons.wifi_off, color: AppColors.error),
-          title: const Text('No Internet Connection'),
-          content: const Text(
-            'Please check your internet connection and try again to start the livestream.',
-          ),
-          actions: <Widget>[
-            FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-          ],
+        barrierColor: _StreamAlert.scrim,
+        builder: (BuildContext ctx) => _StreamAlert(
+          icon: Icons.wifi_off_rounded,
+          title: 'No internet connection',
+          message: 'Please check your mobile data or Wi-Fi and try again to start the livestream.',
+          primaryLabel: 'OK',
+          onPrimary: () => Navigator.pop(ctx),
         ),
       );
       return;
@@ -759,6 +752,134 @@ class _SleepTimerSheet extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Pop-up in the same style as the website's pop-ups: white card, gold top
+/// edge, gold "LIVE STREAM" pill, serif heading, gold and dark buttons.
+class _StreamAlert extends StatelessWidget {
+  const _StreamAlert({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
+  });
+
+  /// Dark green see-through background, as on the website.
+  static const Color scrim = Color(0xC7021412);
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextTheme t = Theme.of(context).textTheme;
+    return Dialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Container(height: 5, color: AppColors.gold),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 12, 0),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(icon, size: 14, color: const Color(0xFF5E4700)),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'LIVE STREAM',
+                          style: TextStyle(
+                            fontFamily: AppTheme.bodyFont,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.3,
+                            color: Color(0xFF5E4700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Close',
+                    onPressed: onSecondary ?? onPrimary,
+                    icon: const Icon(Icons.close_rounded, color: AppColors.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
+              child: Text(
+                title,
+                style: t.headlineSmall?.copyWith(color: AppColors.night, height: 1.2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+              child: Text(
+                message,
+                style: t.bodyLarge?.copyWith(color: AppColors.onSurfaceVariant, height: 1.5),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.end,
+                children: <Widget>[
+                  if (secondaryLabel != null)
+                    OutlinedButton(
+                      onPressed: onSecondary,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.night,
+                        side: const BorderSide(color: AppColors.night),
+                        minimumSize: const Size(110, 48),
+                      ),
+                      child: Text(secondaryLabel!),
+                    ),
+                  FilledButton(
+                    onPressed: onPrimary,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: AppColors.night,
+                      minimumSize: const Size(130, 48),
+                    ),
+                    child: Text(primaryLabel),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
