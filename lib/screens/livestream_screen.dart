@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +28,7 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
   void initState() {
     super.initState();
     radio.status.addListener(_syncSpin);
+    radio.status.addListener(_watchConnection);
     radio.errorMessage.addListener(_showError);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncSpin());
   }
@@ -33,7 +36,9 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
   @override
   void dispose() {
     radio.status.removeListener(_syncSpin);
+    radio.status.removeListener(_watchConnection);
     radio.errorMessage.removeListener(_showError);
+    _noAudioTimer?.cancel();
     _spin.dispose();
     super.dispose();
   }
@@ -75,17 +80,117 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
         });
   }
 
+  // ---------------------------------------------------------------------------
+  // "No audio" pop-up
+  // ---------------------------------------------------------------------------
+
+  /// How long Play may stay silent (buffering, reconnecting or offline)
+  /// before the listener is told what is happening.
+  static const Duration _noAudioAfter = Duration(seconds: 15);
+  Timer? _noAudioTimer;
+  BuildContext? _dialogContext;
+
+  /// Starts a watch whenever the radio is trying to play but no audio is
+  /// coming through; cancels it as soon as the stream is playing.
+  void _watchConnection() {
+    if (!mounted) return;
+    switch (radio.status.value) {
+      case RadioStatus.playing:
+        _noAudioTimer?.cancel();
+        _noAudioTimer = null;
+        _closeDialog(); // audio is back: the pop-up is no longer needed
+      case RadioStatus.connecting:
+      case RadioStatus.reconnecting:
+      case RadioStatus.offline:
+        _noAudioTimer ??= Timer(_noAudioAfter, _onNoAudio);
+      case RadioStatus.stopped:
+      case RadioStatus.paused:
+      case RadioStatus.error:
+        _noAudioTimer?.cancel();
+        _noAudioTimer = null;
+    }
+  }
+
+  void _onNoAudio() {
+    _noAudioTimer = null;
+    final RadioStatus s = radio.status.value;
+    if (!mounted || s == RadioStatus.playing || s == RadioStatus.stopped) return;
+    final bool offline = s == RadioStatus.offline;
+    _showStreamDialog(
+      icon: offline ? Icons.wifi_off_rounded : Icons.volume_off_rounded,
+      title: offline ? 'Connection lost' : 'No audio from the live stream',
+      message: offline
+          ? 'Your phone has lost its internet connection, so the radio cannot play. '
+                'Check your mobile data or Wi-Fi. The app will reconnect by itself when the '
+                'connection returns.'
+          : 'The app is not receiving any audio from the station right now. Your connection '
+                'may be weak, or the live stream may be temporarily off air. '
+                'We will keep trying for you.',
+      keepTrying: true,
+    );
+  }
+
+  /// The stream could not be reached at all (all retries used up).
   void _showError() {
     final String? msg = radio.errorMessage.value;
     if (msg == null || !mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          action: SnackBarAction(label: 'Retry', onPressed: radio.play),
-        ),
-      );
+    _noAudioTimer?.cancel();
+    _noAudioTimer = null;
+    _showStreamDialog(
+      icon: Icons.error_outline_rounded,
+      title: 'Live stream unavailable',
+      message: msg,
+      keepTrying: false,
+    );
+  }
+
+  Future<void> _showStreamDialog({
+    required IconData icon,
+    required String title,
+    required String message,
+    required bool keepTrying,
+  }) async {
+    if (_dialogContext != null) return; // one pop-up at a time
+    final String? choice = await showDialog<String>(
+      context: context,
+      builder: (BuildContext ctx) {
+        _dialogContext = ctx;
+        return AlertDialog(
+          icon: Icon(icon, color: AppColors.error, size: 36),
+          title: Text(title),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'stop'),
+              child: Text(keepTrying ? 'Stop' : 'Close'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, keepTrying ? 'wait' : 'retry'),
+              child: Text(keepTrying ? 'Keep trying' : 'Try again'),
+            ),
+          ],
+        );
+      },
+    );
+    _dialogContext = null;
+    if (!mounted) return;
+    switch (choice) {
+      case 'stop':
+        if (keepTrying) await radio.stop();
+      case 'retry':
+        await _onPlayPressed();
+      case 'wait':
+        // Ask again later if there is still no audio.
+        if (radio.status.value != RadioStatus.playing) {
+          _noAudioTimer?.cancel();
+          _noAudioTimer = Timer(_noAudioAfter * 2, _onNoAudio);
+        }
+    }
+  }
+
+  void _closeDialog() {
+    final BuildContext? ctx = _dialogContext;
+    if (ctx != null && ctx.mounted) Navigator.pop(ctx);
   }
 
   Future<void> _onPlayPressed() async {
