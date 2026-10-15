@@ -23,7 +23,7 @@ class DefaultFirebaseOptions {
 
   /// Android app `org.wantokradiolight.www`: "App ID", e.g.
   /// '1:953977170930:android:0123456789abcdef'.
-  static const String androidAppId = '';
+  static const String androidAppId = '1:953977170930:android:e143ec5787eac062b9996b';
 
   /// Optional: the Android "current_key" from google-services.json. Leave empty
   /// to use the Web API Key above.
