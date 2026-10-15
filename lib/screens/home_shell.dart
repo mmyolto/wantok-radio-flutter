@@ -14,6 +14,7 @@ import '../theme/app_theme.dart';
 import '../utils/launcher.dart';
 import '../widgets/common.dart';
 import '../widgets/mini_player.dart';
+import '../widgets/stream_alert.dart';
 import 'about_screen.dart';
 import 'contact_screen.dart';
 import 'devotional_screen.dart';
@@ -324,7 +325,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       bottomNavigationBar: _index == 0 ? null : MiniPlayer(onOpen: () => _select(0)),
     );
 
-    return PopScope(
+    return StreamProblemWatcher(
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (!didPop) _onBack();
@@ -340,6 +342,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             )
           : content,
+      ),
     );
   }
 }

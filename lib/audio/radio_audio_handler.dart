@@ -15,6 +15,18 @@ import '../services/now_playing_service.dart';
 /// High-level state the UI cares about.
 enum RadioStatus { stopped, connecting, playing, paused, reconnecting, offline, error }
 
+/// A problem the listener must be told about with a pop-up.
+enum StreamProblem {
+  /// Play is on, but no audio has come from the stream for a while.
+  noAudio,
+
+  /// The phone has lost its internet connection.
+  offline,
+
+  /// Every stream and every retry failed; playback has stopped.
+  unavailable,
+}
+
 /// Live-radio audio handler.
 ///
 /// * Plays in the background with lock-screen / notification / headset /
@@ -46,6 +58,13 @@ class RadioAudioHandler extends BaseAudioHandler {
   /// When the sleep timer will stop playback (null = off).
   final ValueNotifier<DateTime?> sleepAt = ValueNotifier<DateTime?>(null);
 
+  /// Set when the listener should see a pop-up (see [StreamProblem]);
+  /// cleared as soon as audio is flowing again or the radio is stopped.
+  final ValueNotifier<StreamProblem?> problem = ValueNotifier<StreamProblem?>(null);
+
+  /// How long Play may stay silent before the listener is told.
+  static const Duration noAudioAfter = Duration(seconds: 10);
+
   static const List<Duration> _retryDelays = <Duration>[
     Duration(seconds: 2),
     Duration(seconds: 4),
@@ -64,6 +83,10 @@ class RadioAudioHandler extends BaseAudioHandler {
   int _failedToken = -1; // stops one failure being handled twice
   Timer? _retryTimer;
   Timer? _sleepTimer;
+  Timer? _watchdog;
+  Duration _lastPosition = Duration.zero;
+  DateTime _lastAudioAt = DateTime.now();
+  bool _stallReported = false;
   Uri? _stationArtUri;
   String? _icyTitle;
   List<String> _streams = <String>[AppConfig.primaryStreamUrl, ...AppConfig.fallbackStreamUrls];
@@ -122,6 +145,52 @@ class RadioAudioHandler extends BaseAudioHandler {
     _subs.add(connectivity.onConnectivityChanged.listen(_onConnectivity));
 
     unawaited(_prepareStationArt());
+    _watchdog = Timer.periodic(const Duration(seconds: 2), (_) => _checkAudio());
+  }
+
+  // ---------------------------------------------------------------------------
+  // "Is audio really coming through?" watchdog
+  // ---------------------------------------------------------------------------
+
+  /// Runs every 2 seconds. The live position only moves forward while sound
+  /// is actually arriving from the streaming host, so a position that stands
+  /// still means no audio (host silent, stream dropped or connection broken),
+  /// even when the player still says "playing".
+  void _checkAudio() {
+    final DateTime now = DateTime.now();
+    if (!_active || _paused) {
+      _lastAudioAt = now;
+      return;
+    }
+    final Duration pos = _player.position;
+    final bool moving = _player.playing && pos > _lastPosition;
+    _lastPosition = pos;
+    if (moving) {
+      _lastAudioAt = now;
+      _stallReported = false;
+      if (problem.value == StreamProblem.noAudio || problem.value == StreamProblem.offline) {
+        problem.value = null; // sound is back
+      }
+      return;
+    }
+    final Duration silent = now.difference(_lastAudioAt);
+    if (silent < noAudioAfter) return;
+
+    // Tell the listener (once per silence; "Keep trying" re-arms it).
+    problem.value ??= _online ? StreamProblem.noAudio : StreamProblem.offline;
+
+    // The player believes it is playing but nothing arrives: reconnect.
+    if (!_stallReported && status.value == RadioStatus.playing) {
+      _stallReported = true;
+      _onStreamFailure(StateError('No audio from the stream'));
+    }
+  }
+
+  /// The listener chose "Keep trying": hide the pop-up and ask again only
+  /// after another full silent period.
+  void acknowledgeProblem() {
+    problem.value = null;
+    _lastAudioAt = DateTime.now();
   }
 
   /// Copies the station artwork out of the app bundle so the notification and
@@ -154,6 +223,10 @@ class RadioAudioHandler extends BaseAudioHandler {
   @override
   Future<void> play() async {
     errorMessage.value = null;
+    problem.value = null;
+    _lastAudioAt = DateTime.now();
+    _lastPosition = Duration.zero;
+    _stallReported = false;
     _active = true;
     _paused = false;
     _resumeAfterInterruption = false;
@@ -168,6 +241,7 @@ class RadioAudioHandler extends BaseAudioHandler {
     }
     if (!_online) {
       _setStatus(RadioStatus.offline);
+      problem.value = StreamProblem.offline;
       return;
     }
     await _connect();
@@ -196,6 +270,7 @@ class RadioAudioHandler extends BaseAudioHandler {
     _sleepTimer = null;
     sleepAt.value = null;
     nowPlaying.releaseForPlayback();
+    problem.value = null;
     await _player.stop();
     _setStatus(RadioStatus.stopped);
     await super.stop();
@@ -241,6 +316,7 @@ class RadioAudioHandler extends BaseAudioHandler {
 
   Future<void> _connect() async {
     _cancelRetry();
+    _lastPosition = Duration.zero; // the new connection's position starts at zero
     final int token = ++_loadToken;
     _setStatus(
       _retry == 0 && _streamIndex == 0 ? RadioStatus.connecting : RadioStatus.reconnecting,
@@ -295,6 +371,7 @@ class RadioAudioHandler extends BaseAudioHandler {
     errorMessage.value =
         'We could not reach the live stream. Please check your connection and try again.';
     _setStatus(RadioStatus.error);
+    problem.value = StreamProblem.unavailable;
   }
 
   void _onPlayerChanged() {
@@ -314,6 +391,8 @@ class RadioAudioHandler extends BaseAudioHandler {
           errorMessage.value = null;
           _setStatus(RadioStatus.playing);
         }
+        // A new connection starts its position again from zero.
+        if (_player.position < _lastPosition) _lastPosition = _player.position;
       case ProcessingState.completed:
         // A live stream should never "finish" — the connection dropped.
         _onStreamFailure(StateError('Stream ended'));
@@ -327,6 +406,7 @@ class RadioAudioHandler extends BaseAudioHandler {
     _online = _hasNetwork(result);
     if (!_online && _active && !_paused) {
       _setStatus(RadioStatus.offline);
+      problem.value = StreamProblem.offline;
     }
     if (_online && !wasOnline && _active && !_paused) {
       _retry = 0;
@@ -463,6 +543,7 @@ class RadioAudioHandler extends BaseAudioHandler {
     }
     nowPlaying.current.removeListener(_onNowPlaying);
     _sleepTimer?.cancel();
+    _watchdog?.cancel();
     _cancelRetry();
     await _player.dispose();
   }

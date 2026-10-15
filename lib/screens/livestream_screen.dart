@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
@@ -10,6 +8,7 @@ import '../services/now_playing_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/launcher.dart';
 import '../widgets/common.dart';
+import '../widgets/stream_alert.dart';
 
 class LivestreamScreen extends StatefulWidget {
   const LivestreamScreen({super.key});
@@ -28,17 +27,12 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
   void initState() {
     super.initState();
     radio.status.addListener(_syncSpin);
-    radio.status.addListener(_watchConnection);
-    radio.errorMessage.addListener(_showError);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncSpin());
   }
 
   @override
   void dispose() {
     radio.status.removeListener(_syncSpin);
-    radio.status.removeListener(_watchConnection);
-    radio.errorMessage.removeListener(_showError);
-    _noAudioTimer?.cancel();
     _spin.dispose();
     super.dispose();
   }
@@ -80,114 +74,6 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
         });
   }
 
-  // ---------------------------------------------------------------------------
-  // "No audio" pop-up
-  // ---------------------------------------------------------------------------
-
-  /// How long Play may stay silent (buffering, reconnecting or offline)
-  /// before the listener is told what is happening.
-  static const Duration _noAudioAfter = Duration(seconds: 15);
-  Timer? _noAudioTimer;
-  BuildContext? _dialogContext;
-
-  /// Starts a watch whenever the radio is trying to play but no audio is
-  /// coming through; cancels it as soon as the stream is playing.
-  void _watchConnection() {
-    if (!mounted) return;
-    switch (radio.status.value) {
-      case RadioStatus.playing:
-        _noAudioTimer?.cancel();
-        _noAudioTimer = null;
-        _closeDialog(); // audio is back: the pop-up is no longer needed
-      case RadioStatus.connecting:
-      case RadioStatus.reconnecting:
-      case RadioStatus.offline:
-        _noAudioTimer ??= Timer(_noAudioAfter, _onNoAudio);
-      case RadioStatus.stopped:
-      case RadioStatus.paused:
-      case RadioStatus.error:
-        _noAudioTimer?.cancel();
-        _noAudioTimer = null;
-    }
-  }
-
-  void _onNoAudio() {
-    _noAudioTimer = null;
-    final RadioStatus s = radio.status.value;
-    if (!mounted || s == RadioStatus.playing || s == RadioStatus.stopped) return;
-    final bool offline = s == RadioStatus.offline;
-    _showStreamDialog(
-      icon: offline ? Icons.wifi_off_rounded : Icons.volume_off_rounded,
-      title: offline ? 'Connection lost' : 'No audio from the live stream',
-      message: offline
-          ? 'Your phone has lost its internet connection, so the radio cannot play. '
-                'Check your mobile data or Wi-Fi. The app will reconnect by itself when the '
-                'connection returns.'
-          : 'The app is not receiving any audio from the station right now. Your connection '
-                'may be weak, or the live stream may be temporarily off air. '
-                'We will keep trying for you.',
-      keepTrying: true,
-    );
-  }
-
-  /// The stream could not be reached at all (all retries used up).
-  void _showError() {
-    final String? msg = radio.errorMessage.value;
-    if (msg == null || !mounted) return;
-    _noAudioTimer?.cancel();
-    _noAudioTimer = null;
-    _showStreamDialog(
-      icon: Icons.error_outline_rounded,
-      title: 'Live stream unavailable',
-      message: msg,
-      keepTrying: false,
-    );
-  }
-
-  Future<void> _showStreamDialog({
-    required IconData icon,
-    required String title,
-    required String message,
-    required bool keepTrying,
-  }) async {
-    if (_dialogContext != null) return; // one pop-up at a time
-    final String? choice = await showDialog<String>(
-      context: context,
-      barrierColor: _StreamAlert.scrim,
-      builder: (BuildContext ctx) {
-        _dialogContext = ctx;
-        return _StreamAlert(
-          icon: icon,
-          title: title,
-          message: message,
-          primaryLabel: keepTrying ? 'Keep trying' : 'Try again',
-          secondaryLabel: keepTrying ? 'Stop' : 'Close',
-          onPrimary: () => Navigator.pop(ctx, keepTrying ? 'wait' : 'retry'),
-          onSecondary: () => Navigator.pop(ctx, 'stop'),
-        );
-      },
-    );
-    _dialogContext = null;
-    if (!mounted) return;
-    switch (choice) {
-      case 'stop':
-        if (keepTrying) await radio.stop();
-      case 'retry':
-        await _onPlayPressed();
-      case 'wait':
-        // Ask again later if there is still no audio.
-        if (radio.status.value != RadioStatus.playing) {
-          _noAudioTimer?.cancel();
-          _noAudioTimer = Timer(_noAudioAfter * 2, _onNoAudio);
-        }
-    }
-  }
-
-  void _closeDialog() {
-    final BuildContext? ctx = _dialogContext;
-    if (ctx != null && ctx.mounted) Navigator.pop(ctx);
-  }
-
   Future<void> _onPlayPressed() async {
     final RadioStatus s = radio.status.value;
     final bool idle = s == RadioStatus.stopped || s == RadioStatus.paused || s == RadioStatus.error;
@@ -207,8 +93,8 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
     if (offline) {
       await showDialog<void>(
         context: context,
-        barrierColor: _StreamAlert.scrim,
-        builder: (BuildContext ctx) => _StreamAlert(
+        barrierColor: StreamAlert.scrim,
+        builder: (BuildContext ctx) => StreamAlert(
           icon: Icons.wifi_off_rounded,
           title: 'No internet connection',
           message: 'Please check your mobile data or Wi-Fi and try again to start the livestream.',
@@ -752,134 +638,6 @@ class _SleepTimerSheet extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Pop-up in the same style as the website's pop-ups: white card, gold top
-/// edge, gold "LIVE STREAM" pill, serif heading, gold and dark buttons.
-class _StreamAlert extends StatelessWidget {
-  const _StreamAlert({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.primaryLabel,
-    required this.onPrimary,
-    this.secondaryLabel,
-    this.onSecondary,
-  });
-
-  /// Dark green see-through background, as on the website.
-  static const Color scrim = Color(0xC7021412);
-
-  final IconData icon;
-  final String title;
-  final String message;
-  final String primaryLabel;
-  final VoidCallback onPrimary;
-  final String? secondaryLabel;
-  final VoidCallback? onSecondary;
-
-  @override
-  Widget build(BuildContext context) {
-    final TextTheme t = Theme.of(context).textTheme;
-    return Dialog(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      clipBehavior: Clip.antiAlias,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Container(height: 5, color: AppColors.gold),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 12, 0),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryContainer,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(icon, size: 14, color: const Color(0xFF5E4700)),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'LIVE STREAM',
-                          style: TextStyle(
-                            fontFamily: AppTheme.bodyFont,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.3,
-                            color: Color(0xFF5E4700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: onSecondary ?? onPrimary,
-                    icon: const Icon(Icons.close_rounded, color: AppColors.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
-              child: Text(
-                title,
-                style: t.headlineSmall?.copyWith(color: AppColors.night, height: 1.2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-              child: Text(
-                message,
-                style: t.bodyLarge?.copyWith(color: AppColors.onSurfaceVariant, height: 1.5),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.end,
-                children: <Widget>[
-                  if (secondaryLabel != null)
-                    OutlinedButton(
-                      onPressed: onSecondary,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: AppColors.night,
-                        side: const BorderSide(color: AppColors.night),
-                        minimumSize: const Size(110, 48),
-                      ),
-                      child: Text(secondaryLabel!),
-                    ),
-                  FilledButton(
-                    onPressed: onPrimary,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: AppColors.night,
-                      minimumSize: const Size(130, 48),
-                    ),
-                    child: Text(primaryLabel),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
