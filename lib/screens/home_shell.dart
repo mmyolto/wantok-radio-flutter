@@ -389,8 +389,8 @@ class _AppDrawer extends StatelessWidget {
         if (onExit != null) _DrawerAction(icon: Icons.exit_to_app, label: 'Exit', onTap: onExit!),
         const SizedBox(height: 24),
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: DeveloperCredit(size: 11.5),
+          padding: EdgeInsets.symmetric(horizontal: 28),
+          child: Align(alignment: Alignment.centerLeft, child: DeveloperCredit(markSize: 24)),
         ),
         const SizedBox(height: 16),
       ],

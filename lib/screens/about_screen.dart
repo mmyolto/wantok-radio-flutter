@@ -72,10 +72,10 @@ class AboutScreen extends StatelessWidget {
             return Column(children: <Widget>[fb, const SizedBox(height: 12), web]);
           },
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 20),
+        const DeveloperCard(),
+        const SizedBox(height: 16),
         const _VersionText(),
-        const SizedBox(height: 6),
-        const DeveloperCredit(),
       ],
     );
   }

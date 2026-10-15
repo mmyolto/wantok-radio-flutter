@@ -115,8 +115,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: DeveloperCredit(color: Colors.white70),
+                padding: EdgeInsets.only(bottom: 20),
+                child: DeveloperCredit(onDark: true),
               ),
             ],
           ),

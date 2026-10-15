@@ -238,35 +238,153 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// "Built & Design: Meltronics Info-Tech" credit line.
-class DeveloperCredit extends StatelessWidget {
-  const DeveloperCredit({super.key, this.color = AppColors.onSurfaceVariant, this.size = 12});
+/// Meltronics Info-Tech gold circle-M mark, drawn in code so it stays sharp.
+class MeltronicsMark extends StatelessWidget {
+  const MeltronicsMark({super.key, this.size = 28});
 
-  final Color color;
   final double size;
 
   @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: const _MarkPainter());
+}
+
+class _MarkPainter extends CustomPainter {
+  const _MarkPainter();
+
+  static const List<Color> _gold = <Color>[Color(0xFFF6E3A1), Color(0xFFD4AF37), Color(0xFF9C7A2B)];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double k = size.width / 120; // drawn on a 120 x 120 grid
+    canvas.scale(k);
+    final Paint gold = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: _gold,
+        stops: <double>[0, 0.45, 1],
+      ).createShader(const Rect.fromLTWH(0, 0, 120, 120))
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawCircle(const Offset(60, 62), 44, gold..strokeWidth = 2.6);
+    canvas.drawCircle(
+      const Offset(61.5, 61),
+      42.5,
+      Paint()
+        ..shader = gold.shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = const Color(0x8CFFFFFF),
+    );
+    final Path m = Path()
+      ..moveTo(36, 92)
+      ..cubicTo(33, 70, 36, 40, 44, 24)
+      ..cubicTo(47, 19, 50, 22, 49, 30)
+      ..cubicTo(48, 44, 49, 62, 50, 74)
+      ..cubicTo(56, 58, 70, 30, 82, 12)
+      ..cubicTo(85, 8, 88, 10, 86, 18)
+      ..cubicTo(82, 44, 78, 74, 74, 106);
+    canvas.drawPath(m, gold..strokeWidth = 4.2);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Developer signature: gold mark, "Designed & developed by", company name.
+/// Used on the splash screen, in the menu and on About Us.
+class DeveloperCredit extends StatelessWidget {
+  const DeveloperCredit({super.key, this.onDark = false, this.markSize = 26});
+
+  /// True on the dark green splash screen.
+  final bool onDark;
+  final double markSize;
+
+  static const Color goldText = Color(0xFF9C7A2B);
+
+  @override
   Widget build(BuildContext context) {
+    final Color label = onDark ? Colors.white.withValues(alpha: 0.62) : AppColors.onSurfaceVariant;
     return Semantics(
       label: AppConfig.developerCredit,
       excludeSemantics: true,
-      child: Text.rich(
-        TextSpan(
-          children: <InlineSpan>[
-            const TextSpan(text: 'Built & Design: '),
-            TextSpan(
-              text: 'Meltronics Info-Tech',
-              style: TextStyle(fontWeight: FontWeight.w700, color: color),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          MeltronicsMark(size: markSize),
+          const SizedBox(width: 10),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'DESIGNED & DEVELOPED BY',
+                style: TextStyle(
+                  fontFamily: AppTheme.bodyFont,
+                  fontSize: 8.5,
+                  height: 1.2,
+                  letterSpacing: 1.3,
+                  fontWeight: FontWeight.w600,
+                  color: label,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                AppConfig.developerName,
+                style: TextStyle(
+                  fontFamily: AppTheme.bodyFont,
+                  fontSize: 13.5,
+                  height: 1.2,
+                  letterSpacing: 0.3,
+                  fontWeight: FontWeight.w700,
+                  color: onDark ? const Color(0xFFE9CF7A) : goldText,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Larger "Developer" card for the About Us screen.
+class DeveloperCard extends StatelessWidget {
+  const DeveloperCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final TextTheme t = Theme.of(context).textTheme;
+    return SectionCard(
+      child: Row(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(color: AppColors.night, shape: BoxShape.circle),
+            child: const MeltronicsMark(size: 48),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'DESIGNED & DEVELOPED BY',
+                  style: t.labelSmall?.copyWith(letterSpacing: 1.4, color: AppColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppConfig.developerName,
+                  style: t.titleLarge?.copyWith(color: DeveloperCredit.goldText),
+                ),
+                const SizedBox(height: 4),
+                Text(AppConfig.developerAbout, style: t.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant)),
+              ],
             ),
-          ],
-        ),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: AppTheme.bodyFont,
-          fontSize: size,
-          letterSpacing: 0.3,
-          color: color.withValues(alpha: 0.85),
-        ),
+          ),
+        ],
       ),
     );
   }

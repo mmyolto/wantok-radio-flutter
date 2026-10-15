@@ -83,7 +83,10 @@ class AppConfig {
   static const String appStoreUrl = '';
 
   /// Developer credit shown on the splash screen, in the menu and on About Us.
-  static const String developerCredit = 'Built & Design: Meltronics Info-Tech';
+  static const String developerName = 'Meltronics Info-Tech';
+  static const String developerCredit = 'Designed and developed by Meltronics Info-Tech';
+  static const String developerAbout =
+      'Port Moresby, Papua New Guinea. Website, mobile app and studio systems for Wantok Radio Light.';
 
   // ---------------------------------------------------------------------------
   // Feature switches
