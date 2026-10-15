@@ -38,14 +38,41 @@ class _LivestreamScreenState extends State<LivestreamScreen> with SingleTickerPr
     super.dispose();
   }
 
+  /// True while the disc is gliding back to its starting position.
+  bool _returning = false;
+
   void _syncSpin() {
     if (!mounted) return;
     final bool reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     if (radio.status.value == RadioStatus.playing && !reduceMotion) {
-      if (!_spin.isAnimating) _spin.repeat();
+      if (!_spin.isAnimating || _returning) {
+        _returning = false;
+        _spin.repeat();
+      }
     } else {
-      _spin.stop();
+      _returnToStart();
     }
+  }
+
+  /// When the radio stops, the disc finishes its turn and settles back
+  /// upright (its original position) instead of freezing at an angle.
+  void _returnToStart() {
+    if (_returning) return;
+    _spin.stop();
+    final double v = _spin.value;
+    if (v == 0) return;
+    _returning = true;
+    _spin
+        .animateTo(
+          1,
+          duration: Duration(milliseconds: (350 + 900 * (1 - v)).round()),
+          curve: Curves.easeOutCubic,
+        )
+        .whenCompleteOrCancel(() {
+          if (!mounted || !_returning) return;
+          _returning = false;
+          _spin.value = 0; // same angle as 1 full turn
+        });
   }
 
   void _showError() {
