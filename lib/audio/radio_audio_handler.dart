@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../config/app_config.dart';
 import '../services/now_playing_service.dart';
+import 'silence_probe.dart';
 
 /// High-level state the UI cares about.
 enum RadioStatus { stopped, connecting, playing, paused, reconnecting, offline, error }
@@ -87,6 +88,13 @@ class RadioAudioHandler extends BaseAudioHandler {
   Duration _lastPosition = Duration.zero;
   DateTime _lastAudioAt = DateTime.now();
   bool _stallReported = false;
+
+  // Silence check: the host can stay "online" while sending only silence.
+  bool _silent = false; // latest probe found silence
+  bool _probing = false;
+  int _silentProbes = 0;
+  bool _heardSinceStart = false; // a probe found real sound since Play
+  DateTime _nextProbeAt = DateTime.now();
   Uri? _stationArtUri;
   String? _icyTitle;
   List<String> _streams = <String>[AppConfig.primaryStreamUrl, ...AppConfig.fallbackStreamUrls];
@@ -163,7 +171,10 @@ class RadioAudioHandler extends BaseAudioHandler {
       return;
     }
     final Duration pos = _player.position;
-    final bool moving = _player.playing && pos > _lastPosition;
+    if (_player.playing && !_probing && now.isAfter(_nextProbeAt)) {
+      unawaited(_probeSilence());
+    }
+    final bool moving = _player.playing && pos > _lastPosition && !_silent;
     _lastPosition = pos;
     if (moving) {
       _lastAudioAt = now;
@@ -184,6 +195,35 @@ class RadioAudioHandler extends BaseAudioHandler {
       _stallReported = true;
       _onStreamFailure(StateError('No audio from the stream'));
     }
+  }
+
+  /// Downloads a few seconds of the stream to hear whether it carries sound.
+  /// At Play one silent sample is enough; while listening, two in a row are
+  /// needed so a short pause in a programme never raises the pop-up.
+  Future<void> _probeSilence() async {
+    _probing = true;
+    final String url = _streams[_streamIndex % _streams.length];
+    final bool? silent = await SilenceProbe.isSilent(url);
+    _probing = false;
+    if (!_active || _paused) return;
+    final DateTime now = DateTime.now();
+    if (silent == true) {
+      _silentProbes++;
+      if (!_heardSinceStart || _silentProbes >= 2) {
+        if (!_silent) {
+          _silent = true;
+          // Raise the pop-up on the next check instead of waiting again.
+          _lastAudioAt = now.subtract(noAudioAfter);
+        }
+      }
+    } else if (silent == false) {
+      _silentProbes = 0;
+      _heardSinceStart = true;
+      _silent = false;
+    }
+    _nextProbeAt = now.add(
+      _silent || _silentProbes > 0 ? const Duration(seconds: 8) : const Duration(seconds: 30),
+    );
   }
 
   /// The listener chose "Keep trying": hide the pop-up and ask again only
@@ -227,6 +267,10 @@ class RadioAudioHandler extends BaseAudioHandler {
     _lastAudioAt = DateTime.now();
     _lastPosition = Duration.zero;
     _stallReported = false;
+    _silent = false;
+    _silentProbes = 0;
+    _heardSinceStart = false;
+    _nextProbeAt = DateTime.now().add(const Duration(seconds: 2));
     _active = true;
     _paused = false;
     _resumeAfterInterruption = false;
@@ -317,6 +361,7 @@ class RadioAudioHandler extends BaseAudioHandler {
   Future<void> _connect() async {
     _cancelRetry();
     _lastPosition = Duration.zero; // the new connection's position starts at zero
+    _nextProbeAt = DateTime.now().add(const Duration(seconds: 2)); // check the new stream soon
     final int token = ++_loadToken;
     _setStatus(
       _retry == 0 && _streamIndex == 0 ? RadioStatus.connecting : RadioStatus.reconnecting,
