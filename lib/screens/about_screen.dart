@@ -143,7 +143,7 @@ class _VersionText extends StatelessWidget {
       future: _info,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snap) {
         final String v = snap.hasData
-            ? 'Version ${snap.data!.version} (${snap.data!.buildNumber})'
+            ? 'App Version ${snap.data!.version}'
             : '';
         return Text(
           v,
