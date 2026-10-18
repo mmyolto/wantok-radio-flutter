@@ -3,6 +3,9 @@
 All notable changes to the Wantok Radio Light app.
 The version number matches `version:` in `pubspec.yaml`.
 
+## 1.0.2 (build 15) — October 2026
+- Monthly News sign-up: brighter gold Subscribe button for better contrast
+
 ## 1.0.1 (build 14) — October 2026
 - **Monthly News**: free email sign-up for the station's monthly news, in the menu and on the About Us page
   (same subscriber list as the website, managed on wantokradio.org/admin.html)

@@ -73,7 +73,7 @@ class _SubscribeCardState extends State<SubscribeCard> {
       enabledBorder: border,
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
-        borderSide: BorderSide(color: AppColors.secondary, width: 2),
+        borderSide: BorderSide(color: AppColors.gold, width: 2),
       ),
     );
     return DecoratedBox(
@@ -82,7 +82,7 @@ class _SubscribeCardState extends State<SubscribeCard> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[AppColors.primary, Color(0xFF0B4A42)],
+          colors: <Color>[AppColors.primary, AppColors.night],
         ),
         boxShadow: const <BoxShadow>[
           BoxShadow(color: Color(0x33000000), blurRadius: 18, offset: Offset(0, 8)),
@@ -100,7 +100,7 @@ class _SubscribeCardState extends State<SubscribeCard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: AppColors.gold,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
@@ -150,7 +150,7 @@ class _SubscribeCardState extends State<SubscribeCard> {
               FilledButton.icon(
                 onPressed: _busy ? null : _submit,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
+                  backgroundColor: AppColors.gold,
                   foregroundColor: AppColors.primary,
                   minimumSize: const Size.fromHeight(50),
                   textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
