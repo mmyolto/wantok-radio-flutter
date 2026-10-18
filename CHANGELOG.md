@@ -3,6 +3,10 @@
 All notable changes to the Wantok Radio Light app.
 The version number matches `version:` in `pubspec.yaml`.
 
+## 1.0.1 (build 14) — October 2026
+- **Monthly News**: free email sign-up for the station's monthly news, in the menu and on the About Us page
+  (same subscriber list as the website, managed on wantokradio.org/admin.html)
+
 ## 1.1.0 (build 2) — October 2026
 - **Daily Devotional** page: devotionals written by the Radio Chaplain, with an offline copy and sharing
 - Optional devotional notifications at 5:00 am and 9:00 pm in each listener's own local time,

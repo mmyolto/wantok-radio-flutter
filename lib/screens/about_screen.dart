@@ -6,6 +6,7 @@ import '../data/station_content.dart';
 import '../theme/app_theme.dart';
 import '../utils/launcher.dart';
 import '../widgets/common.dart';
+import '../widgets/subscribe_card.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -39,6 +40,8 @@ class AboutScreen extends StatelessWidget {
         const _AboutSection(title: 'Mission', icon: Icons.flag_outlined, body: missionText),
         const SizedBox(height: 16),
         const _AboutSection(title: 'Vision', icon: Icons.visibility_outlined, body: visionText),
+        const SizedBox(height: 16),
+        const SubscribeCard(),
         const SizedBox(height: 24),
         Text(
           'Connect With Us',

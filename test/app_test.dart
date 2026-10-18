@@ -7,6 +7,7 @@ import 'package:wantok_radio_light/screens/contact_screen.dart';
 import 'package:wantok_radio_light/screens/devotional_screen.dart';
 import 'package:wantok_radio_light/screens/donation_screen.dart';
 import 'package:wantok_radio_light/screens/faq_screen.dart';
+import 'package:wantok_radio_light/screens/news_screen.dart';
 import 'package:wantok_radio_light/screens/program_screen.dart';
 import 'package:wantok_radio_light/screens/requests_screen.dart';
 import 'package:wantok_radio_light/services/devotional_service.dart';
@@ -199,6 +200,7 @@ void main() {
       'Contact': () => const ContactScreen(),
       'Donation': () => const DonationScreen(),
       'FAQ': () => const FaqScreen(),
+      'Monthly News': () => const NewsScreen(),
       'Prayer form': () => const RequestFormPage(kind: RequestKind.prayer),
       'Song form': () => const RequestFormPage(kind: RequestKind.song),
       'Privacy': () => const PrivacyPolicyPage(),

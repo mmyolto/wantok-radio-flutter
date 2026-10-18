@@ -21,6 +21,7 @@ import 'devotional_screen.dart';
 import 'donation_screen.dart';
 import 'faq_screen.dart';
 import 'livestream_screen.dart';
+import 'news_screen.dart';
 import 'program_screen.dart';
 import 'requests_screen.dart';
 
@@ -54,6 +55,12 @@ final List<_Section> _sections = <_Section>[
     Icons.volunteer_activism_outlined,
     Icons.volunteer_activism,
     () => const DonationScreen(),
+  ),
+  _Section(
+    'Monthly News',
+    Icons.mark_email_unread_outlined,
+    Icons.mark_email_unread,
+    () => const NewsScreen(),
   ),
   _Section('FAQ', Icons.question_answer_outlined, Icons.question_answer, () => const FaqScreen()),
 ];
