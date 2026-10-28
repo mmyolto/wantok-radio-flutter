@@ -77,13 +77,16 @@ class _DevotionalScreenState extends State<DevotionalScreen> {
   @override
   Widget build(BuildContext context) {
     final String today = _isoDate(DateTime.now());
-    // A devotional is dated by the listener's local day; hide ones that
-    // listeners further east already received for "tomorrow".
-    final List<Devotional> items = (_items ?? const <Devotional>[])
-        .where((Devotional d) => d.date.compareTo(today) <= 0)
-        .toList();
-    final List<Devotional> todays = items.where((Devotional d) => d.date == today).toList();
-    final List<Devotional> earlier = items.where((Devotional d) => d.date != today).toList();
+    // Only TODAY's devotionals: at most one morning and one evening. Yesterday's
+    // are never carried over (and "tomorrow's", already sent further east, are hidden).
+    final Map<DevotionalSlot, Devotional> bySlot = <DevotionalSlot, Devotional>{};
+    for (final Devotional d in _items ?? const <Devotional>[]) {
+      if (d.date == today) bySlot.putIfAbsent(d.slot, () => d); // newest first
+    }
+    final List<Devotional> todays = <Devotional>[
+      for (final DevotionalSlot s in DevotionalSlot.values) ?bySlot[s],
+    ];
+    final List<Devotional> items = todays;
     final TextTheme t = Theme.of(context).textTheme;
 
     return RefreshIndicator(
@@ -124,14 +127,6 @@ class _DevotionalScreenState extends State<DevotionalScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: DevotionalCard(devotional: d, featured: true),
-                ),
-            ],
-            if (earlier.isNotEmpty) ...<Widget>[
-              _SectionLabel(todays.isEmpty ? 'Latest' : 'Earlier'),
-              for (final Devotional d in earlier)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: DevotionalCard(devotional: d),
                 ),
             ],
           ],

@@ -93,6 +93,10 @@ class PushService {
     null,
   );
 
+  /// Month (`YYYY-MM`) of a News Letter notification that was tapped, or that
+  /// arrived while the app is open.
+  final ValueNotifier<String?> newsletterRequests = ValueNotifier<String?>(null);
+
   /// Devotionals that arrive while the app is open (shown as an in-app banner).
   final StreamController<DevotionalOpenRequest> _foreground =
       StreamController<DevotionalOpenRequest>.broadcast();
@@ -184,6 +188,10 @@ class PushService {
       await m.setForegroundNotificationPresentationOptions();
 
       FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+        if (msg.data['type'] == 'newsletter') {
+          newsletterRequests.value = msg.data['month'] as String? ?? '';
+          return;
+        }
         final DevotionalOpenRequest? r = DevotionalOpenRequest.fromMessage(msg);
         if (r != null) _foreground.add(r);
       });
@@ -207,6 +215,10 @@ class PushService {
   }
 
   void _opened(RemoteMessage msg) {
+    if (msg.data['type'] == 'newsletter') {
+      newsletterRequests.value = msg.data['month'] as String? ?? '';
+      return;
+    }
     final DevotionalOpenRequest? r = DevotionalOpenRequest.fromMessage(msg);
     if (r != null) openRequests.value = r;
   }
@@ -284,14 +296,17 @@ class PushService {
 
   Future<void> _doSync({required bool force}) async {
     final FirebaseMessaging? m = _messaging;
-    if (m == null || !_prefs.asked) return;
+    if (m == null) return;
 
     final String zone = await _deviceZone();
+    final bool devotionals = _prefs.asked && (_prefs.morning || _prefs.evening);
     final Set<String> wanted = <String>{
-      if (_prefs.morning) topicFor(DevotionalSlot.morning, zone),
-      if (_prefs.evening) topicFor(DevotionalSlot.evening, zone),
+      // Everyone gets the monthly News Letter — no phone number or email needed.
+      AppConfig.newsletterTopic,
+      if (_prefs.asked && _prefs.morning) topicFor(DevotionalSlot.morning, zone),
+      if (_prefs.asked && _prefs.evening) topicFor(DevotionalSlot.evening, zone),
     };
-    if (wanted.isNotEmpty && _prefs.registeredZone != zone && await _registerZone(zone)) {
+    if (devotionals && _prefs.registeredZone != zone && await _registerZone(zone)) {
       _prefs = _prefs.copyWith(registeredZone: zone);
       await _prefs.save();
     }

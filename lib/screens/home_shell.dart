@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../app_services.dart';
 import '../audio/radio_audio_handler.dart';
 import '../config/app_config.dart';
+import '../services/newsletter_service.dart';
 import '../services/push_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/launcher.dart';
@@ -91,11 +92,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _setForegroundInterest(true);
     pushService.openRequests.addListener(_handleOpenRequest);
     pushService.state.addListener(_maybeOfferReminders);
+    pushService.newsletterRequests.addListener(_handleNewsletterRequest);
     _foregroundSub = pushService.foregroundMessages.listen(_showDevotionalBanner);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleOpenRequest();
       _maybeOfferReminders();
+      _handleNewsletterRequest();
     });
+    // A new monthly News Letter? Show it once, even if notifications are off.
+    unawaited(Future<void>.delayed(const Duration(seconds: 6), _maybeShowNewsletter));
   }
 
   @override
@@ -104,6 +109,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _setForegroundInterest(false);
     pushService.openRequests.removeListener(_handleOpenRequest);
     pushService.state.removeListener(_maybeOfferReminders);
+    pushService.newsletterRequests.removeListener(_handleNewsletterRequest);
     _foregroundSub?.cancel();
     super.dispose();
   }
@@ -163,6 +169,49 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           ],
         ),
       );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Monthly News Letter
+  // ---------------------------------------------------------------------------
+
+  /// News Letter notification tapped (or received while the app is open).
+  void _handleNewsletterRequest() {
+    final String? month = pushService.newsletterRequests.value;
+    if (month == null || !mounted) return;
+    pushService.newsletterRequests.value = null;
+    _scaffoldKey.currentState?.closeDrawer();
+    Navigator.of(context).push(NewsletterPage.route(month: month));
+  }
+
+  Future<void> _maybeShowNewsletter() async {
+    if (!mounted) return;
+    final Newsletter? n = await newsletterService.unseen();
+    if (n == null || !mounted) return;
+    // Don't cover another dialog or page — try again next time the app opens.
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    final bool? read = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        icon: const Icon(Icons.mark_email_unread, color: AppColors.secondary, size: 36),
+        title: Text('News Letter — ${newsletterMonthLabel(n.month)}'),
+        content: Text(
+          n.preview.isEmpty ? 'Our monthly News Letter is here.' : n.preview,
+          maxLines: 6,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Later')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Read')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (read ?? false) {
+      await Navigator.of(context).push(NewsletterPage.route(newsletter: n));
+    } else {
+      await newsletterService.markSeen(n.month);
+    }
   }
 
   /// Once, after the first start: offer the 5 am / 9 pm reminders.

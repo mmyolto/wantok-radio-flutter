@@ -43,7 +43,7 @@ Privacy policy: https://wantokradio.org/privacy.html  (upload privacy.html from 
 - Data is **not shared** with third parties, **not used for advertising**, encrypted in transit (HTTPS).
 - Users can request deletion by e-mailing wrlstudio@wantokradio.org.
 - No account, no tracking, no ads.
-- **Device or other IDs** (Firebase Cloud Messaging ID) — collected only when the listener turns on devotional reminders; purpose **App functionality**; not shared; not linked to the request details.
+- **Device or other IDs** (Firebase Cloud Messaging ID) — used to deliver the monthly News Letter notification to every install and the optional devotional reminders; purpose **App functionality**; not shared; not linked to the request details.
 - The phone's **time zone name** (e.g. Pacific/Port_Moresby) is sent so reminders arrive at local time. It is stored on its own, not linked to any person or device, and is not location data in Play's sense (no GPS, no address).
 
 ## Google Play — Foreground service declaration
@@ -52,7 +52,7 @@ App content → Foreground service permissions → **Media playback**:
 
 ## Apple — App Privacy answers
 - Data types: **Name**, **Phone Number**, **Other User Content**. For each: purpose **App Functionality**, linked to the user's identity **No**, used for tracking **No**.
-- **Device ID** (Firebase Cloud Messaging, for the optional devotional reminders): purpose **App Functionality**, linked to identity **No**, tracking **No**.
+- **Device ID** (Firebase Cloud Messaging, for the monthly News Letter and the optional devotional reminders): purpose **App Functionality**, linked to identity **No**, tracking **No**.
 - Background modes: Audio (live radio), Remote notifications (devotional reminders).
 
 ## Apple — Review notes (paste into "Notes" in App Store Connect)

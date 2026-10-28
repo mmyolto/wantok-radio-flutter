@@ -71,17 +71,15 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<!-- Always light: the app keeps its own brand theme in iOS dark mode. -->
+	<!-- Portrait only, also on iPad. -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 </dict>

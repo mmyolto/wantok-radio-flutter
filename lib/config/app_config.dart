@@ -41,6 +41,9 @@ class AppConfig {
   static const String morningDevotionalTopic = 'devotional-morning';
   static const String eveningDevotionalTopic = 'devotional-evening';
 
+  /// Every install joins this topic: the monthly News Letter notification.
+  static const String newsletterTopic = 'newsletter';
+
   /// Used only if the phone's time zone can't be read.
   static const String homeTimeZone = 'Pacific/Port_Moresby';
 

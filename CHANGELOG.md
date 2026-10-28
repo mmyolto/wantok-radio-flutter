@@ -3,6 +3,15 @@
 All notable changes to the Wantok Radio Light app.
 The version number matches `version:` in `pubspec.yaml`.
 
+## 1.2.0 (build 16) — October 2026
+- **Monthly News Letter in the app**: at the end of every month the station's News Letter appears for
+  everyone who has the app — no phone number or email needed. A notification announces it, and the
+  app shows it once on the next start (also when notifications are turned off)
+- Monthly News page lists every News Letter; tap one to read it (photos and attachments included)
+- Daily Devotional shows only today's two devotionals (morning and evening); yesterday's are no longer carried over
+- Always portrait (upright) on every phone and tablet
+- Targets Android 16 (API 36) for Google Play; build tooling updated
+
 ## 1.0.2 (build 15) — October 2026
 - Monthly News sign-up: brighter gold Subscribe button for better contrast
 
