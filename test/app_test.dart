@@ -98,6 +98,20 @@ void main() {
       expect(np.artUrl, isNotNull);
     });
 
+    test('hides studio library codes like (MED) in titles', () {
+      expect(NowPlaying.cleanTag('Come Home Running  (MED)'), 'Come Home Running');
+      expect(NowPlaying.cleanTag('Save The Day (Album: Acoustically Inclined) (SOFT-MED)'),
+          'Save The Day (Album: Acoustically Inclined)');
+      expect(NowPlaying.cleanTag('Yes Lord Yes (Hot)'), 'Yes Lord Yes (Hot)');
+      expect(NowPlaying.cleanTag('Amazing Grace (Live)'), 'Amazing Grace (Live)');
+      final NowPlaying? np = NowPlaying.fromAzuraCast(<String, dynamic>{
+        'now_playing': <String, dynamic>{
+          'song': <String, dynamic>{'title': 'Come Home Running  (MED)', 'artist': 'Chris Tomlin'},
+        },
+      });
+      expect(np!.display, 'Come Home Running — Chris Tomlin');
+    });
+
     test('ignores placeholder art and tolerates missing fields', () {
       final NowPlaying? np = NowPlaying.fromAzuraCast(<String, dynamic>{
         'now_playing': <String, dynamic>{

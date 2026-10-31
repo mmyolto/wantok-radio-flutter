@@ -46,10 +46,10 @@ class NowPlaying {
     final Map<String, dynamic> live = _map(json['live']);
     final Map<String, dynamic> listeners = _map(json['listeners']);
 
-    String? title = _str(song['title']);
-    final String? artist = _str(song['artist']);
+    String? title = cleanTag(_str(song['title']));
+    final String? artist = cleanTag(_str(song['artist']));
     if ((title == null || title.isEmpty) && _str(song['text']) != null) {
-      title = _str(song['text']);
+      title = cleanTag(_str(song['text']));
     }
 
     String? art = _str(song['art']);
@@ -85,6 +85,21 @@ class NowPlaying {
           .toSet()
           .toList(),
     );
+  }
+
+  /// Removes the studio's music-library codes from the end of a title,
+  /// e.g. "Come Home Running  (MED)" or "Save The Day (SOFT-MED)".
+  /// Only ALL-CAPS codes in brackets are removed, so "(Live)" or "(Hot)" stay.
+  @visibleForTesting
+  static String? cleanTag(String? s) {
+    if (s == null) return null;
+    final RegExp code = RegExp(r'\s*\(\s*[A-Z]{2,}(?:[ /-][A-Z]{2,})*\s*\)\s*$');
+    String out = s;
+    while (code.hasMatch(out)) {
+      out = out.replaceFirst(code, '');
+    }
+    out = out.trim();
+    return out.isEmpty ? s.trim() : out;
   }
 
   static Map<String, dynamic> _map(Object? v) =>

@@ -3,6 +3,9 @@
 All notable changes to the Wantok Radio Light app.
 The version number matches `version:` in `pubspec.yaml`.
 
+## 1.2.1 (build 17) — November 2026
+- "Now playing" hides the studio's music-library codes such as (MED) or (SOFT-MED) at the end of song titles
+
 ## 1.2.0 (build 16) — October 2026
 - **Monthly News Letter in the app**: at the end of every month the station's News Letter appears for
   everyone who has the app — no phone number or email needed. A notification announces it, and the
